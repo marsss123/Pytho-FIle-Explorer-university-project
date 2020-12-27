@@ -1,10 +1,9 @@
-import sys
-import os
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.Qt import QKeySequence, QCursor, QDesktopServices
 import shutil
+import subprocess, os, platform , sys
 
 class myWindow(QMainWindow):####O ARXIKOS KODIKA POY XERO APLA ME DIO KALSEIS COPY KAI PASTE
     def __init__(self):###O KANONIKOS EINAI O 4 
@@ -293,7 +292,11 @@ class myWindow(QMainWindow):####O ARXIKOS KODIKA POY XERO APLA ME DIO KALSEIS CO
             print(path, "is an application")
             return True
         else:
-            return False
+            if platform.system() == 'Darwin or Linux':       # macOS ,linux variants
+                subprocess.call(('open', path))
+            elif platform.system() == 'Windows':    # Windows
+                os.startfile(path)
+            
 
     def makeExecutable(self):
         if self.listview.selectionModel().hasSelection():

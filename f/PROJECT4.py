@@ -78,6 +78,8 @@ class myWindow(QMainWindow):####O ARXIKOS KODIKA POY XERO APLA ME DIO KALSEIS CO
         self.fileModel = QFileSystemModel()
         self.fileModel.setReadOnly(False)
         self.fileModel.setFilter(QDir.NoDotAndDotDot | QDir.AllDirs  | QDir.Files)
+        self.defNameFilters = self.fileModel.nameFilters()
+        self.fileModel.setNameFilterDisables(False)
         self.fileModel.setResolveSymlinks(True)
         self.treeview.setModel(self.dirModel)
         self.treeview.hideColumn(1)
@@ -262,19 +264,7 @@ class myWindow(QMainWindow):####O ARXIKOS KODIKA POY XERO APLA ME DIO KALSEIS CO
         self.createFolderAction.setShortcut(QKeySequence("Shift+Ctrl+n"))
         self.createFolderAction.setShortcutVisibleInContextMenu(True)
         self.treeview.addAction(self.createFolderAction) 
-    def checkIsApplication(self, path):
-        st = subprocess.check_output("file  --mime-type '" + path + "'", stderr=subprocess.STDOUT, universal_newlines=True, shell=True)
-        print(st)
-        if "application/x-executable" in st:
-            print(path, "is an application")
-            return True
-        else:
-            if platform.system() == 'Darwin or Linux':       # macOS ,linux variants
-                subprocess.call(('open', path))
-            elif platform.system() == 'Windows':    # Windows
-                os.startfile(path)
-            
-
+    
     def makeExecutable(self):
         if self.listview.selectionModel().hasSelection():
             index = self.listview.selectionModel().currentIndex()
@@ -330,11 +320,11 @@ class myWindow(QMainWindow):####O ARXIKOS KODIKA POY XERO APLA ME DIO KALSEIS CO
         index = self.treeview.selectionModel().currentIndex()
         path = self.dirModel.fileInfo(index).absoluteFilePath()
         print("open findWindow")
-        self.w = findFilesWindow.ListBox()
-        self.w.show()
-        self.w.folderEdit.setText(path)
-        self.w.findEdit.setText(self.findfield.text())
-
+        if self.findfield.text() != "":
+            self.fileModel.setNameFilters([self.findfield.text()])
+        else:
+            self.fileModel.setNameFilters(self.defNameFilters)
+        self.setWindowTitle("Search results in : " + path)
     def refreshList(self):
         print("refreshing view")
         index = self.listview.selectionModel().currentIndex()
@@ -354,9 +344,9 @@ class myWindow(QMainWindow):####O ARXIKOS KODIKA POY XERO APLA ME DIO KALSEIS CO
         size = sum(os.path.getsize(f) for f in os.listdir(folder) if os.path.isfile(f))
         return size
     
-        
-
     def on_selectionChanged(self):
+        self.fileModel.setNameFilters(self.defNameFilters)
+        self.findfield.setText("")
         self.treeview.selectionModel().clearSelection()
         index = self.treeview.selectionModel().currentIndex()
         path = self.dirModel.fileInfo(index).absoluteFilePath()
@@ -368,13 +358,13 @@ class myWindow(QMainWindow):####O ARXIKOS KODIKA POY XERO APLA ME DIO KALSEIS CO
     def openFile(self):
         if self.listview.hasFocus():
             index = self.listview.selectionModel().currentIndex()
-            self.copyFile()
-            for files in self.copyList:
-                print("%s '%s'" % ("open file", files))
-                if self.checkIsApplication(path) == True:
-                    self.process.startDetached(files)
-                else:
-                    QDesktopServices.openUrl(QUrl(files , QUrl.TolerantMode | QUrl.EncodeUnicode))
+            if platform.system() == 'Darwin':       # macOS
+                subprocess.call(('open', path))
+            elif platform.system() == 'Windows':    # Windows
+                os.startfile(path)
+            else:                                   # linux variants
+                subprocess.call(('xdg-open', path))
+
 
     def openFileText(self):
         if self.listview.selectionModel().hasSelection():
@@ -396,10 +386,13 @@ class myWindow(QMainWindow):####O ARXIKOS KODIKA POY XERO APLA ME DIO KALSEIS CO
         index = self.listview.selectionModel().currentIndex()
         path = self.fileModel.fileInfo(index).absoluteFilePath()
         if not self.fileModel.fileInfo(index).isDir():
-            if self.checkIsApplication(path) == True:
-                self.process.startDetached(path)
-            else:
-                QDesktopServices.openUrl(QUrl(path , QUrl.TolerantMode | QUrl.EncodeUnicode))
+            if platform.system() == 'Darwin':       # macOS
+                subprocess.call(('open', path))
+            elif platform.system() == 'Windows':    # Windows
+                os.startfile(path)
+            else:                                   # linux variants
+                subprocess.call(('xdg-open', path))
+
         else:
             self.treeview.setCurrentIndex(self.dirModel.index(path))
             self.treeview.setFocus()
